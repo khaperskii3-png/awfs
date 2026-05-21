@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Вселенная — Idle Evolution</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://yandex.ru/games/sdk/v2"></script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div id="topbar">
+    <div class="top-cell">
+      <div class="label">Стадия</div>
+      <div id="stage-name" class="value">Кварк</div>
+      <div id="stage-desc" class="sub">Хаос элементарных частиц</div>
+    </div>
+    <div class="top-cell center">
+      <div class="label">Энергия</div>
+      <div id="energy" class="value big">0</div>
+      <div id="rate" class="sub">+0 / сек</div>
+    </div>
+    <div class="top-cell right">
+      <div class="label">Множитель</div>
+      <div id="multiplier" class="value">×1.00</div>
+      <div id="booster" class="sub hidden">×2 бустер: 5:00</div>
+    </div>
+  </div>
+
+  <div id="leftpanel">
+    <h3>Апгрейды</h3>
+    <div class="upgrade" data-type="click">
+      <div class="u-head">
+        <span class="u-name">Сила клика</span>
+        <span class="u-level">Ур. 0</span>
+      </div>
+      <div class="u-effect">+1 за клик</div>
+      <button class="u-buy">Купить · 10 E</button>
+    </div>
+    <div class="upgrade" data-type="auto">
+      <div class="u-head">
+        <span class="u-name">Авто-генератор</span>
+        <span class="u-level">Ур. 0</span>
+      </div>
+      <div class="u-effect">+0.5 в секунду</div>
+      <button class="u-buy">Купить · 25 E</button>
+    </div>
+    <div class="upgrade" data-type="mult">
+      <div class="u-head">
+        <span class="u-name">Резонанс</span>
+        <span class="u-level">Ур. 0</span>
+      </div>
+      <div class="u-effect">+10% ко всему</div>
+      <button class="u-buy">Купить · 100 E</button>
+    </div>
+  </div>
+
+  <div id="rightpanel">
+    <div id="advance-panel" class="hidden">
+      <div class="adv-title">⚡ ЭВОЛЮЦИЯ ⚡</div>
+      <div id="advance-target">→ Атом</div>
+      <button id="advance-btn">Перейти на следующую форму</button>
+      <div class="adv-hint">+50% к множителю навсегда</div>
+    </div>
+    <div id="advance-cost-info">До следующей формы: 50 E</div>
+    <button id="rewarded-btn">📺 Реклама за ×2 на 5 мин</button>
+    <div id="ad-status" class="sub"></div>
+  </div>
+
+  <div id="stage-progress">
+    <div id="stage-progress-fill"></div>
+  </div>
+
+  <div id="hint" class="hint">Кликай по экрану!</div>
+</div>
+
+<div id="transition-text" class="hidden"></div>
+
+<script src="js/state.js"></script>
+<script src="js/stages.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/render.js"></script>
+<script src="js/yandex.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
