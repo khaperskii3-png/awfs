@@ -1,0 +1,2114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Вселенная — Idle Evolution</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  z-index: 0;
+}
+
+#hud {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+#topbar, #leftpanel, #rightpanel { pointer-events: auto; }
+
+#topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.78), rgba(0,0,0,0.0));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.top-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.top-cell.center { align-items: center; text-align: center; }
+.top-cell.right { align-items: flex-end; text-align: right; }
+
+.label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.value {
+  font-size: 18px;
+  font-weight: 600;
+  text-shadow: 0 0 10px currentColor;
+}
+.value.big { font-size: 28px; }
+.sub {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+#leftpanel {
+  position: absolute;
+  left: 12px;
+  top: 110px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#leftpanel h3 {
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  padding-left: 4px;
+}
+
+.upgrade {
+  background: rgba(15, 15, 30, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 0.2s, transform 0.1s;
+}
+.upgrade:hover { border-color: rgba(255,255,255,0.18); }
+
+.u-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.u-name { font-size: 14px; font-weight: 600; }
+.u-level { font-size: 11px; opacity: 0.55; }
+.u-effect { font-size: 11px; opacity: 0.7; margin-bottom: 8px; }
+
+.u-buy {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.u-buy:hover:not(:disabled) {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.4);
+}
+.u-buy:active:not(:disabled) { transform: scale(0.97); }
+.u-buy:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.u-buy.affordable {
+  background: rgba(120, 200, 255, 0.18);
+  border-color: rgba(120, 200, 255, 0.5);
+  box-shadow: 0 0 16px rgba(120, 200, 255, 0.25);
+}
+
+#rightpanel {
+  position: absolute;
+  right: 12px;
+  top: 110px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+#advance-panel {
+  background: rgba(60, 0, 80, 0.5);
+  border: 1px solid rgba(255, 100, 255, 0.4);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  box-shadow: 0 0 24px rgba(255, 100, 255, 0.3);
+  animation: pulseGlow 1.6s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+  0%,100% { box-shadow: 0 0 18px rgba(255, 100, 255, 0.25); }
+  50% { box-shadow: 0 0 38px rgba(255, 100, 255, 0.55); }
+}
+
+.adv-title {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+#advance-target {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+#advance-btn {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, #ff44ff, #6644ff);
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.1s;
+}
+#advance-btn:hover { transform: scale(1.03); }
+#advance-btn:active { transform: scale(0.97); }
+.adv-hint { font-size: 11px; opacity: 0.7; margin-top: 6px; }
+
+#advance-cost-info {
+  background: rgba(15, 15, 30, 0.72);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  text-align: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+#rewarded-btn {
+  background: linear-gradient(135deg, #ffaa00, #ff4400);
+  border: none;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 0 18px rgba(255, 170, 0, 0.35);
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+#rewarded-btn:hover { transform: scale(1.03); box-shadow: 0 0 24px rgba(255, 170, 0, 0.55); }
+#rewarded-btn:active { transform: scale(0.97); }
+#rewarded-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+#ad-status {
+  text-align: center;
+  min-height: 16px;
+  font-size: 11px;
+}
+
+#stage-progress {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(70%, 480px);
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+#stage-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #44ddff, #ff44ff);
+  box-shadow: 0 0 12px rgba(255,100,255,0.6);
+  transition: width 0.2s linear;
+}
+
+.hint {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  opacity: 0.55;
+  pointer-events: none;
+  animation: hintPulse 2s ease-in-out infinite;
+}
+@keyframes hintPulse {
+  0%,100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+#transition-text {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 30px currentColor, 0 0 60px currentColor;
+  z-index: 100;
+  pointer-events: none;
+  text-align: center;
+}
+#transition-text .sub {
+  display: block;
+  font-size: 16px;
+  letter-spacing: 0.3em;
+  opacity: 0.7;
+  margin-top: 14px;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 720px) {
+  #topbar { padding: 10px; gap: 6px; }
+  .value { font-size: 14px; }
+  .value.big { font-size: 22px; }
+  .label { font-size: 9px; }
+  .sub { font-size: 10px; }
+
+  #leftpanel { width: 160px; top: 96px; left: 8px; }
+  #rightpanel { width: 160px; top: 96px; right: 8px; }
+  .upgrade { padding: 8px; }
+  .u-name { font-size: 12px; }
+  .u-buy { font-size: 11px; padding: 6px 8px; }
+  #advance-panel { padding: 10px; }
+  #advance-btn { font-size: 12px; padding: 8px; }
+  #rewarded-btn { font-size: 11px; padding: 8px; }
+  #transition-text { font-size: 36px; }
+  #transition-text .sub { font-size: 12px; }
+}
+
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div id="topbar">
+    <div class="top-cell">
+      <div class="label">Стадия</div>
+      <div id="stage-name" class="value">Кварк</div>
+      <div id="stage-desc" class="sub">Хаос элементарных частиц</div>
+    </div>
+    <div class="top-cell center">
+      <div class="label">Энергия</div>
+      <div id="energy" class="value big">0</div>
+      <div id="rate" class="sub">+0 / сек</div>
+    </div>
+    <div class="top-cell right">
+      <div class="label">Множитель</div>
+      <div id="multiplier" class="value">×1.00</div>
+      <div id="booster" class="sub hidden">×2 бустер: 5:00</div>
+    </div>
+  </div>
+
+  <div id="leftpanel">
+    <h3>Апгрейды</h3>
+    <div class="upgrade" data-type="click">
+      <div class="u-head">
+        <span class="u-name">Сила клика</span>
+        <span class="u-level">Ур. 0</span>
+      </div>
+      <div class="u-effect">+1 за клик</div>
+      <button class="u-buy">Купить · 10 E</button>
+    </div>
+    <div class="upgrade" data-type="auto">
+      <div class="u-head">
+        <span class="u-name">Авто-генератор</span>
+        <span class="u-level">Ур. 0</span>
+      </div>
+      <div class="u-effect">+0.5 в секунду</div>
+      <button class="u-buy">Купить · 25 E</button>
+    </div>
+    <div class="upgrade" data-type="mult">
+      <div class="u-head">
+        <span class="u-name">Резонанс</span>
+        <span class="u-level">Ур. 0</span>
+      </div>
+      <div class="u-effect">+10% ко всему</div>
+      <button class="u-buy">Купить · 100 E</button>
+    </div>
+  </div>
+
+  <div id="rightpanel">
+    <div id="advance-panel" class="hidden">
+      <div class="adv-title">⚡ ЭВОЛЮЦИЯ ⚡</div>
+      <div id="advance-target">→ Атом</div>
+      <button id="advance-btn">Перейти на следующую форму</button>
+      <div class="adv-hint">+50% к множителю навсегда</div>
+    </div>
+    <div id="advance-cost-info">До следующей формы: 50 E</div>
+    <button id="rewarded-btn">📺 Реклама за ×2 на 5 мин</button>
+    <div id="ad-status" class="sub"></div>
+  </div>
+
+  <div id="stage-progress">
+    <div id="stage-progress-fill"></div>
+  </div>
+
+  <div id="hint" class="hint">Кликай по экрану!</div>
+</div>
+
+<div id="transition-text" class="hidden"></div>
+
+<script>
+// ===== js/state.js =====
+// Состояние игры и формулы.
+const State = {
+  energy: 0,
+  totalEnergy: 0,
+  stage: 0,
+  upgrades: { click: 0, auto: 0, mult: 0 },
+  multiplier: 1,           // Постоянный множитель от эволюций
+  boosterEndTime: 0,       // performance.now() мс
+  transitioning: false,
+  transitionStart: 0,
+  transitionFromStage: 0,
+  clickFx: [],             // Всплывающие "+N" числа после клика
+};
+
+const UPGRADE_DEFS = {
+  click: {
+    name: 'Сила клика',
+    baseCost: 10,
+    growth: 1.15,
+    effect: lvl => `+${lvl + 1} за клик`,
+  },
+  auto: {
+    name: 'Авто-генератор',
+    baseCost: 25,
+    growth: 1.18,
+    effect: lvl => `+${(lvl * 0.5).toFixed(1)} в секунду`,
+  },
+  mult: {
+    name: 'Резонанс',
+    baseCost: 100,
+    growth: 1.30,
+    effect: lvl => `+${lvl * 10}% ко всему`,
+  },
+};
+
+function clickPower() {
+  return (1 + State.upgrades.click) * totalMultiplier();
+}
+
+function autoRate() {
+  return State.upgrades.auto * 0.5 * totalMultiplier();
+}
+
+function totalMultiplier() {
+  const upgradeMult = 1 + State.upgrades.mult * 0.1;
+  const booster = isBoosterActive() ? 2 : 1;
+  return upgradeMult * State.multiplier * booster;
+}
+
+function isBoosterActive() {
+  return performance.now() < State.boosterEndTime;
+}
+
+function boosterRemainingMs() {
+  return Math.max(0, State.boosterEndTime - performance.now());
+}
+
+function upgradeCost(type) {
+  const def = UPGRADE_DEFS[type];
+  return Math.floor(def.baseCost * Math.pow(def.growth, State.upgrades[type]));
+}
+
+function buyUpgrade(type) {
+  const cost = upgradeCost(type);
+  if (State.energy < cost) return false;
+  State.energy -= cost;
+  State.upgrades[type]++;
+  Audio.playUpgrade();
+  return true;
+}
+
+function advanceCost() {
+  return STAGES[State.stage].advanceCost;
+}
+
+function canAdvance() {
+  return State.stage < STAGES.length - 1 && State.energy >= advanceCost();
+}
+
+function startAdvance() {
+  if (!canAdvance() || State.transitioning) return false;
+  State.energy -= advanceCost();
+  State.transitioning = true;
+  State.transitionStart = performance.now();
+  State.transitionFromStage = State.stage;
+  Audio.playTransition();
+  return true;
+}
+
+function completeAdvance() {
+  State.stage++;
+  State.multiplier *= 1.5;
+  Audio.onStageChange(State.stage);
+  Render.onStageEnter(State.stage);
+}
+
+function endTransition() {
+  State.transitioning = false;
+}
+
+function doClick(x, y) {
+  if (State.transitioning) return;
+  const gain = clickPower();
+  State.energy += gain;
+  State.totalEnergy += gain;
+  Audio.playClick();
+  State.clickFx.push({
+    x, y,
+    text: '+' + fmtNum(gain),
+    life: 1.0,
+    vy: -40,
+    color: STAGES[State.stage].palette.main,
+  });
+  Render.onClick(x, y);
+}
+
+function tick(dt) {
+  if (State.transitioning) return;
+  const gain = autoRate() * dt;
+  if (gain > 0) {
+    State.energy += gain;
+    State.totalEnergy += gain;
+  }
+  // Обновление всплывающих чисел
+  for (let i = State.clickFx.length - 1; i >= 0; i--) {
+    const f = State.clickFx[i];
+    f.life -= dt * 1.4;
+    f.y += f.vy * dt;
+    if (f.life <= 0) State.clickFx.splice(i, 1);
+  }
+}
+
+const SUFFIXES = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
+function fmtNum(n) {
+  if (!isFinite(n)) return '∞';
+  if (n < 0.01) return '0';
+  if (n < 1000) {
+    if (Number.isInteger(n)) return n.toString();
+    return parseFloat(n.toFixed(2)).toString();
+  }
+  let i = 0;
+  while (n >= 1000 && i < SUFFIXES.length - 1) { n /= 1000; i++; }
+  return n.toFixed(2) + SUFFIXES[i];
+}
+
+function fmtTime(ms) {
+  const s = Math.ceil(ms / 1000);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return m + ':' + (r < 10 ? '0' : '') + r;
+}
+
+// ===== js/stages.js =====
+// Описания стадий эволюции. Стоимость — энергия для перехода НА следующую стадию.
+const STAGES = [
+  {
+    name: 'Кварк',
+    desc: 'Хаос элементарных частиц',
+    advanceCost: 50,
+    palette: {
+      bg1: '#0a0014', bg2: '#1e0040',
+      main: '#ff33ee', accent: '#33eeff', extra: '#ffee44',
+      glow: '#ff66ff',
+    },
+    audio: { fundamental: 55, harmonics: [1.0, 1.5, 2.5] },
+  },
+  {
+    name: 'Атом',
+    desc: 'Электроны вокруг ядра',
+    advanceCost: 600,
+    palette: {
+      bg1: '#000820', bg2: '#001a48',
+      main: '#3388ff', accent: '#66ddff', extra: '#ffffff',
+      glow: '#aaccff',
+    },
+    audio: { fundamental: 65, harmonics: [1.0, 2.0, 3.0] },
+  },
+  {
+    name: 'Молекула',
+    desc: 'Связи между атомами',
+    advanceCost: 7000,
+    palette: {
+      bg1: '#001a14', bg2: '#003428',
+      main: '#22ffaa', accent: '#00ddcc', extra: '#aaffee',
+      glow: '#66ffcc',
+    },
+    audio: { fundamental: 73, harmonics: [1.0, 1.25, 2.0] },
+  },
+  {
+    name: 'Клетка',
+    desc: 'Первая жизнь',
+    advanceCost: 80000,
+    palette: {
+      bg1: '#1a0010', bg2: '#3a0020',
+      main: '#ff4488', accent: '#ff9966', extra: '#ffaacc',
+      glow: '#ff77aa',
+    },
+    audio: { fundamental: 87, harmonics: [1.0, 1.33, 1.66] },
+  },
+  {
+    name: 'Существо',
+    desc: 'Сложный организм',
+    advanceCost: 1000000,
+    palette: {
+      bg1: '#0a1800', bg2: '#1a3400',
+      main: '#aaff44', accent: '#ffdd22', extra: '#ddff88',
+      glow: '#ccff66',
+    },
+    audio: { fundamental: 98, harmonics: [1.0, 1.5, 2.25] },
+  },
+  {
+    name: 'Планета',
+    desc: 'Мир с лунами',
+    advanceCost: 12000000,
+    palette: {
+      bg1: '#000810', bg2: '#00182c',
+      main: '#3399ff', accent: '#ffffff', extra: '#88ccff',
+      glow: '#aaddff',
+    },
+    audio: { fundamental: 110, harmonics: [1.0, 2.0, 3.5] },
+  },
+  {
+    name: 'Звезда',
+    desc: 'Термоядерный пульсар',
+    advanceCost: 150000000,
+    palette: {
+      bg1: '#180600', bg2: '#2e1000',
+      main: '#ffaa00', accent: '#ffff66', extra: '#ff5511',
+      glow: '#ffcc44',
+    },
+    audio: { fundamental: 130, harmonics: [1.0, 1.5, 2.5, 4.0] },
+  },
+  {
+    name: 'Галактика',
+    desc: 'Миллиарды звёзд',
+    advanceCost: 2000000000,
+    palette: {
+      bg1: '#08001a', bg2: '#1a0036',
+      main: '#cc88ff', accent: '#ffddff', extra: '#66aaff',
+      glow: '#bb99ff',
+    },
+    audio: { fundamental: 146, harmonics: [1.0, 1.25, 1.5, 2.0] },
+  },
+  {
+    name: 'Вселенная',
+    desc: 'Космическая паутина',
+    advanceCost: 25000000000,
+    palette: {
+      bg1: '#000005', bg2: '#0a0a20',
+      main: '#ffcc44', accent: '#ffffff', extra: '#aa88ff',
+      glow: '#ffddaa',
+    },
+    audio: { fundamental: 165, harmonics: [1.0, 1.5, 2.0, 3.0, 4.0] },
+  },
+  {
+    name: 'Мультивселенная',
+    desc: 'Параллельные пузыри',
+    advanceCost: Infinity,
+    palette: {
+      bg1: '#000000', bg2: '#0e0028',
+      main: '#ffffff', accent: '#ff44ff', extra: '#44ffff',
+      glow: '#ffffff',
+    },
+    audio: { fundamental: 196, harmonics: [1.0, 1.333, 1.5, 1.666, 2.0] },
+  },
+];
+
+// ===== js/audio.js =====
+// Web Audio: генеративный амбиент по стадиям + клик + переход.
+const Audio = (() => {
+  let ctx = null;
+  let masterGain = null;
+  let ambientGain = null;
+  let ambientNodes = [];   // {osc, gain, lfo, lfoGain}
+  let started = false;
+  let muted = false;
+
+  function init() {
+    if (ctx) return;
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      ctx = new Ctx();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.5;
+      masterGain.connect(ctx.destination);
+
+      ambientGain = ctx.createGain();
+      ambientGain.gain.value = 0;
+      ambientGain.connect(masterGain);
+    } catch (e) {
+      ctx = null;
+    }
+  }
+
+  function start() {
+    if (started || !ctx) return;
+    started = true;
+    if (ctx.state === 'suspended') ctx.resume();
+    setStageAmbient(State.stage);
+    fadeAmbient(0.22, 1.5);
+  }
+
+  function fadeAmbient(target, sec) {
+    if (!ambientGain) return;
+    const now = ctx.currentTime;
+    ambientGain.gain.cancelScheduledValues(now);
+    ambientGain.gain.setValueAtTime(ambientGain.gain.value, now);
+    ambientGain.gain.linearRampToValueAtTime(muted ? 0 : target, now + sec);
+  }
+
+  function stopAmbient() {
+    for (const n of ambientNodes) {
+      try {
+        n.osc.stop(ctx.currentTime + 1.4);
+        if (n.lfo) n.lfo.stop(ctx.currentTime + 1.4);
+        n.gain.gain.cancelScheduledValues(ctx.currentTime);
+        n.gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.2);
+      } catch (e) {}
+    }
+    ambientNodes = [];
+  }
+
+  function setStageAmbient(stageIdx) {
+    if (!ctx) return;
+    stopAmbient();
+    const stage = STAGES[stageIdx];
+    const f = stage.audio.fundamental;
+    const harmonics = stage.audio.harmonics;
+    const wave = stageIdx < 3 ? 'sawtooth' : stageIdx < 6 ? 'triangle' : 'sine';
+
+    harmonics.forEach((h, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = wave;
+      osc.frequency.value = f * h;
+      osc.detune.value = (Math.random() - 0.5) * 12;
+
+      const g = ctx.createGain();
+      g.gain.value = 0;
+      const target = 0.18 / Math.sqrt(harmonics.length) / (1 + i * 0.4);
+      g.gain.linearRampToValueAtTime(target, ctx.currentTime + 1.5);
+
+      // Низкий фильтр
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 800 + stageIdx * 120;
+      filter.Q.value = 1.2;
+
+      // Медленный LFO на амплитуду
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.08 + Math.random() * 0.15;
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = target * 0.35;
+      lfo.connect(lfoGain);
+      lfoGain.connect(g.gain);
+
+      osc.connect(filter);
+      filter.connect(g);
+      g.connect(ambientGain);
+
+      osc.start();
+      lfo.start();
+      ambientNodes.push({ osc, gain: g, lfo, lfoGain });
+    });
+  }
+
+  function onStageChange(stageIdx) {
+    if (!ctx || !started) return;
+    setStageAmbient(stageIdx);
+  }
+
+  function playClick() {
+    if (!ctx || !started) return;
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    const stage = STAGES[State.stage];
+    const f = stage.audio.fundamental * 4;
+    osc.frequency.setValueAtTime(f * (1 + Math.random() * 0.3), t);
+    osc.frequency.exponentialRampToValueAtTime(f * 0.5, t + 0.12);
+
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.12, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+
+    osc.connect(g);
+    g.connect(masterGain);
+    osc.start(t);
+    osc.stop(t + 0.2);
+  }
+
+  function playUpgrade() {
+    if (!ctx || !started) return;
+    const t = ctx.currentTime;
+    [1, 1.5, 2].forEach((mult, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      const f = 440 * mult;
+      osc.frequency.setValueAtTime(f, t + i * 0.06);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t + i * 0.06);
+      g.gain.linearRampToValueAtTime(0.08, t + i * 0.06 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.06 + 0.3);
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start(t + i * 0.06);
+      osc.stop(t + i * 0.06 + 0.32);
+    });
+  }
+
+  function playTransition() {
+    if (!ctx || !started) return;
+    const t = ctx.currentTime;
+
+    // Восходящий sweep
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(80, t);
+    osc.frequency.exponentialRampToValueAtTime(1200, t + 2.4);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, t);
+    filter.frequency.exponentialRampToValueAtTime(6000, t + 2.4);
+    filter.Q.value = 8;
+
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.18, t + 0.3);
+    g.gain.linearRampToValueAtTime(0.0, t + 2.6);
+
+    osc.connect(filter);
+    filter.connect(g);
+    g.connect(masterGain);
+    osc.start(t);
+    osc.stop(t + 2.7);
+
+    // "Колокол" в середине
+    [1, 1.5, 2, 3].forEach((m, i) => {
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = 440 * m;
+      const og = ctx.createGain();
+      og.gain.setValueAtTime(0, t + 1.4);
+      og.gain.linearRampToValueAtTime(0.08 / (i + 1), t + 1.42);
+      og.gain.exponentialRampToValueAtTime(0.0001, t + 3.0);
+      o.connect(og);
+      og.connect(masterGain);
+      o.start(t + 1.4);
+      o.stop(t + 3.1);
+    });
+  }
+
+  function setMuted(m) {
+    muted = m;
+    if (!ctx) return;
+    masterGain.gain.cancelScheduledValues(ctx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(m ? 0 : 0.5, ctx.currentTime + 0.3);
+  }
+
+  function isMuted() { return muted; }
+
+  return { init, start, onStageChange, playClick, playUpgrade, playTransition, setMuted, isMuted };
+})();
+
+// ===== js/render.js =====
+// Canvas рендер: фон, сцена стадии, переход, эффекты клика.
+const Render = (() => {
+  let canvas, ctx;
+  let w = 0, h = 0, dpr = 1;
+  let stars = [];                // Фоновое звёздное поле
+  let stageDataCache = {};       // idx -> состояние сцены (кэшируется отдельно для каждой стадии)
+  let clickRipples = [];         // Круги при клике
+
+  function init() {
+    canvas = document.getElementById('game');
+    ctx = canvas.getContext('2d');
+    resize();
+    window.addEventListener('resize', resize);
+    initStars();
+    onStageEnter(State.stage);
+  }
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function initStars() {
+    stars = [];
+    const n = 140;
+    for (let i = 0; i < n; i++) {
+      stars.push({
+        x: Math.random(),
+        y: Math.random(),
+        r: Math.random() * 1.2 + 0.2,
+        twinkle: Math.random() * Math.PI * 2,
+        speed: 0.4 + Math.random() * 1.4,
+      });
+    }
+  }
+
+  // Инициализация специфичных для стадии данных
+  function buildStageData(idx) {
+    const data = { idx };
+    switch (idx) {
+      case 0: // Кварк — хаос частиц
+        data.particles = [];
+        for (let i = 0; i < 60; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const r = Math.random() * 140;
+          data.particles.push({
+            x: Math.cos(a) * r, y: Math.sin(a) * r,
+            vx: (Math.random() - 0.5) * 160,
+            vy: (Math.random() - 0.5) * 160,
+            r: 1.5 + Math.random() * 2.5,
+            colorIdx: Math.floor(Math.random() * 3),
+            trail: [],
+          });
+        }
+        break;
+      case 1: // Атом — электроны на орбитах
+        data.electrons = [];
+        for (let i = 0; i < 3; i++) {
+          data.electrons.push({
+            a: 80 + i * 35,
+            b: 50 + i * 20,
+            angle: i * 2.094,
+            tilt: i * 1.04,
+            speed: 1.8 - i * 0.4,
+          });
+        }
+        break;
+      case 2: // Молекула — связанные атомы
+        data.atoms = [];
+        const N = 5;
+        for (let i = 0; i < N; i++) {
+          const a = (i / N) * Math.PI * 2;
+          data.atoms.push({
+            ox: Math.cos(a) * 110,
+            oy: Math.sin(a) * 110,
+            wobble: Math.random() * Math.PI * 2,
+            r: 14 + Math.random() * 6,
+          });
+        }
+        data.atoms.push({ ox: 0, oy: 0, wobble: 0, r: 22 });
+        break;
+      case 3: // Клетка — пульсирующий организм
+        data.organelles = [];
+        for (let i = 0; i < 8; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const r = Math.random() * 60;
+          data.organelles.push({
+            x: Math.cos(a) * r, y: Math.sin(a) * r,
+            r: 4 + Math.random() * 8,
+            phase: Math.random() * Math.PI * 2,
+            drift: Math.random() * Math.PI * 2,
+          });
+        }
+        data.membranePoints = 32;
+        break;
+      case 4: // Существо
+        data.path = []; // путь движения
+        data.tail = []; // волна хвоста
+        for (let i = 0; i < 8; i++) data.tail.push(0);
+        break;
+      case 5: // Планета
+        data.cloudOffset = 0;
+        data.moonAngle = 0;
+        break;
+      case 6: // Звезда
+        data.prominences = [];
+        for (let i = 0; i < 8; i++) {
+          data.prominences.push({
+            angle: (i / 8) * Math.PI * 2,
+            length: 60 + Math.random() * 80,
+            phase: Math.random() * Math.PI * 2,
+          });
+        }
+        break;
+      case 7: { // Галактика
+        data.galaxyParticles = [];
+        const arms = 3;
+        for (let i = 0; i < 320; i++) {
+          const arm = i % arms;
+          const t = Math.random();
+          const r = Math.pow(t, 0.7) * 230;
+          const baseA = arm * (Math.PI * 2 / arms) + Math.pow(t, 0.5) * 4.5;
+          const jitter = (Math.random() - 0.5) * 0.5;
+          data.galaxyParticles.push({
+            r,
+            a: baseA + jitter,
+            size: 0.5 + Math.random() * 1.8,
+            brightness: 0.4 + Math.random() * 0.6,
+          });
+        }
+        break;
+      }
+      case 8: { // Вселенная — сетка мини-галактик
+        data.cells = [];
+        for (let row = -1; row <= 1; row++) {
+          for (let col = -1; col <= 1; col++) {
+            data.cells.push({
+              x: col * 140, y: row * 110,
+              rot: Math.random() * Math.PI * 2,
+              speed: 0.2 + Math.random() * 0.4,
+            });
+          }
+        }
+        data.webPoints = [];
+        for (let i = 0; i < 60; i++) {
+          data.webPoints.push({
+            x: (Math.random() - 0.5) * 500,
+            y: (Math.random() - 0.5) * 400,
+            phase: Math.random() * Math.PI * 2,
+          });
+        }
+        break;
+      }
+      case 9: { // Мультивселенная — пузыри
+        data.bubbles = [];
+        for (let i = 0; i < 6; i++) {
+          data.bubbles.push({
+            x: (Math.random() - 0.5) * 320,
+            y: (Math.random() - 0.5) * 220,
+            r: 50 + Math.random() * 50,
+            phase: Math.random() * Math.PI * 2,
+            driftA: Math.random() * Math.PI * 2,
+            hue: Math.random() * 360,
+          });
+        }
+        break;
+      }
+    }
+    return data;
+  }
+
+  function getStageData(idx) {
+    if (!stageDataCache[idx]) stageDataCache[idx] = buildStageData(idx);
+    return stageDataCache[idx];
+  }
+
+  function onStageEnter(idx) {
+    stageDataCache[idx] = buildStageData(idx);
+  }
+
+  function onClick(x, y) {
+    clickRipples.push({ x, y, r: 0, life: 1.0, color: STAGES[State.stage].palette.main });
+  }
+
+  // ---- Главный цикл рендера ----
+  let lastT = performance.now();
+  function frame(nowMs) {
+    const now = nowMs || performance.now();
+    const dt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+
+    drawBackground(now);
+    drawStars(now / 1000);
+
+    if (State.transitioning) {
+      drawTransition(now);
+    } else {
+      drawStage(State.stage, now / 1000, 1.0);
+    }
+
+    drawClickRipples(dt);
+    drawClickFx();
+  }
+
+  function drawBackground(now) {
+    const pal = STAGES[State.stage].palette;
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, pal.bg1);
+    g.addColorStop(1, pal.bg2);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  function drawStars(t) {
+    ctx.save();
+    for (const s of stars) {
+      const tw = 0.5 + 0.5 * Math.sin(t * s.speed + s.twinkle);
+      ctx.globalAlpha = 0.35 + 0.5 * tw;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ---- Переход между стадиями ----
+  const TRANSITION_MS = 2800;
+  function drawTransition(now) {
+    const elapsed = now - State.transitionStart;
+    const p = Math.min(1, elapsed / TRANSITION_MS);
+
+    // На середине переключаем стадию
+    if (p >= 0.5 && State.stage === State.transitionFromStage) {
+      completeAdvance();
+    }
+
+    // Фейд старой/новой сцены
+    const oldAlpha = p < 0.5 ? 1 - p * 2 : 0;
+    const newAlpha = p < 0.5 ? 0 : (p - 0.5) * 2;
+
+    if (oldAlpha > 0) drawStage(State.transitionFromStage, now / 1000, oldAlpha);
+    if (newAlpha > 0) drawStage(State.stage, now / 1000, newAlpha);
+
+    // Вспышка
+    const flash = Math.exp(-Math.pow((p - 0.5) * 6, 2));
+    if (flash > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = flash * 0.95;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+
+    // Расходящиеся кольца
+    const cx = w / 2, cy = h / 2;
+    for (let i = 0; i < 3; i++) {
+      const lp = (p * 3 - i * 0.3) % 1;
+      if (lp < 0 || lp > 1) continue;
+      const r = lp * Math.max(w, h);
+      ctx.save();
+      ctx.globalAlpha = (1 - lp) * 0.5;
+      ctx.strokeStyle = STAGES[State.stage].palette.main;
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = STAGES[State.stage].palette.glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (p >= 1) endTransition();
+  }
+
+  // ---- Универсальный диспетчер стадий ----
+  function drawStage(idx, t, alpha) {
+    const data = getStageData(idx);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(w / 2, h / 2);
+    const drawers = [
+      drawQuark, drawAtom, drawMolecule, drawCell, drawCreature,
+      drawPlanet, drawStar, drawGalaxy, drawUniverse, drawMultiverse,
+    ];
+    drawers[idx](t, data);
+    ctx.restore();
+  }
+
+  // ---------- Стадия 0: Кварк ----------
+  function drawQuark(t, data) {
+    const pal = STAGES[0].palette;
+    const colors = [pal.main, pal.accent, pal.extra];
+    const R = 180;
+
+    // Граница "вакуума"
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, R + 10, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    const dt = 1 / 60;
+    for (const p of data.particles) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      const d = Math.hypot(p.x, p.y);
+      if (d > R) {
+        const nx = p.x / d, ny = p.y / d;
+        const dot = p.vx * nx + p.vy * ny;
+        p.vx -= 2 * dot * nx;
+        p.vy -= 2 * dot * ny;
+        p.x = nx * R; p.y = ny * R;
+      }
+      p.trail.unshift({ x: p.x, y: p.y });
+      if (p.trail.length > 8) p.trail.pop();
+
+      const col = colors[p.colorIdx];
+      ctx.save();
+      ctx.shadowBlur = 14;
+      ctx.shadowColor = col;
+      // Хвост
+      ctx.strokeStyle = col;
+      ctx.lineWidth = p.r * 0.6;
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      for (let i = 0; i < p.trail.length; i++) {
+        const tp = p.trail[i];
+        if (i === 0) ctx.moveTo(tp.x, tp.y);
+        else ctx.lineTo(tp.x, tp.y);
+      }
+      ctx.stroke();
+      // Частица
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // ---------- Стадия 1: Атом ----------
+  function drawAtom(t, data) {
+    const pal = STAGES[1].palette;
+
+    // Орбиты
+    ctx.save();
+    ctx.strokeStyle = pal.accent;
+    ctx.globalAlpha = 0.25;
+    ctx.lineWidth = 1;
+    for (const e of data.electrons) {
+      ctx.save();
+      ctx.rotate(e.tilt);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, e.a, e.b, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // Ядро
+    const pulse = 1 + 0.06 * Math.sin(t * 3);
+    ctx.save();
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = pal.glow;
+    const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, 26 * pulse);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.4, pal.main);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, 26 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Электроны
+    for (const e of data.electrons) {
+      e.angle += e.speed * 1/60;
+      const lx = Math.cos(e.angle) * e.a;
+      const ly = Math.sin(e.angle) * e.b;
+      const cs = Math.cos(e.tilt), sn = Math.sin(e.tilt);
+      const x = lx * cs - ly * sn;
+      const y = lx * sn + ly * cs;
+
+      ctx.save();
+      ctx.shadowBlur = 24;
+      ctx.shadowColor = pal.accent;
+      ctx.fillStyle = pal.accent;
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // ---------- Стадия 2: Молекула ----------
+  function drawMolecule(t, data) {
+    const pal = STAGES[2].palette;
+    const rot = t * 0.4;
+
+    // Связи
+    ctx.save();
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = pal.glow;
+    ctx.strokeStyle = pal.accent;
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.6;
+    const center = data.atoms[data.atoms.length - 1];
+    for (let i = 0; i < data.atoms.length - 1; i++) {
+      const a = data.atoms[i];
+      const ax = Math.cos(rot) * a.ox - Math.sin(rot) * a.oy;
+      const ay = Math.sin(rot) * a.ox + Math.cos(rot) * a.oy;
+      ctx.beginPath();
+      ctx.moveTo(center.ox, center.oy);
+      ctx.lineTo(ax, ay);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Атомы
+    for (let i = 0; i < data.atoms.length; i++) {
+      const a = data.atoms[i];
+      a.wobble += 1/60 * 2;
+      const wob = Math.sin(a.wobble) * 2;
+      let x, y;
+      if (i === data.atoms.length - 1) {
+        x = a.ox; y = a.oy;
+      } else {
+        x = Math.cos(rot) * a.ox - Math.sin(rot) * a.oy;
+        y = Math.sin(rot) * a.ox + Math.cos(rot) * a.oy;
+      }
+      const r = a.r + wob;
+
+      ctx.save();
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = pal.glow;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(0.5, pal.main);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // ---------- Стадия 3: Клетка ----------
+  function drawCell(t, data) {
+    const pal = STAGES[3].palette;
+    const baseR = 140;
+    const pulse = 1 + 0.08 * Math.sin(t * 1.8);
+
+    // Мембрана
+    ctx.save();
+    ctx.shadowBlur = 30;
+    ctx.shadowColor = pal.glow;
+    const grad = ctx.createRadialGradient(0, 0, baseR * 0.2, 0, 0, baseR);
+    grad.addColorStop(0, 'rgba(255, 80, 140, 0.45)');
+    grad.addColorStop(0.7, 'rgba(255, 60, 100, 0.18)');
+    grad.addColorStop(1, 'rgba(60, 0, 30, 0.0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    const N = data.membranePoints;
+    for (let i = 0; i <= N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      const wob = Math.sin(a * 4 + t * 1.5) * 6 + Math.sin(a * 7 + t * 0.7) * 4;
+      const r = baseR * pulse + wob;
+      const x = Math.cos(a) * r;
+      const y = Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = pal.main;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // Ядро клетки
+    ctx.save();
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = pal.glow;
+    const ng = ctx.createRadialGradient(0, 0, 0, 0, 0, 30);
+    ng.addColorStop(0, '#ffaadd');
+    ng.addColorStop(1, 'rgba(150, 0, 60, 0.0)');
+    ctx.fillStyle = ng;
+    ctx.beginPath();
+    ctx.arc(0, 0, 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Органеллы
+    for (const o of data.organelles) {
+      o.drift += 1/60 * 0.4;
+      const cx = o.x + Math.cos(o.drift + o.phase) * 12;
+      const cy = o.y + Math.sin(o.drift) * 12;
+      const r = o.r * (1 + 0.2 * Math.sin(t * 2.5 + o.phase));
+      ctx.save();
+      ctx.shadowBlur = 16;
+      ctx.shadowColor = pal.accent;
+      ctx.fillStyle = pal.accent;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // ---------- Стадия 4: Существо ----------
+  function drawCreature(t, data) {
+    const pal = STAGES[4].palette;
+    // Тело плывёт по фигурной траектории
+    const cx = Math.sin(t * 0.5) * 140;
+    const cy = Math.cos(t * 0.7) * 80;
+    const heading = Math.atan2(Math.cos(t * 0.7) * 80 * 0.7 * -1, Math.cos(t * 0.5) * 140 * 0.5);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(heading);
+
+    // Хвост (волна)
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = pal.glow;
+    ctx.strokeStyle = pal.main;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    for (let i = 0; i < 30; i++) {
+      const xi = -i * 4;
+      const yi = Math.sin(t * 8 + i * 0.5) * (i * 0.4);
+      if (i === 0) ctx.moveTo(xi, yi); else ctx.lineTo(xi, yi);
+    }
+    ctx.stroke();
+
+    // Тело — эллипс
+    ctx.fillStyle = pal.main;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 36, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Брюшко
+    ctx.fillStyle = pal.accent;
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    ctx.ellipse(0, 6, 30, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Плавник верхний
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = pal.extra;
+    ctx.beginPath();
+    ctx.moveTo(-4, -12);
+    ctx.quadraticCurveTo(0, -32, 14, -10);
+    ctx.closePath();
+    ctx.fill();
+
+    // Глаз
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(22, -4, 3.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(23, -5, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ---------- Стадия 5: Планета ----------
+  function drawPlanet(t, data) {
+    const pal = STAGES[5].palette;
+    const R = 110;
+
+    // Атмосфера
+    ctx.save();
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = pal.glow;
+    const ag = ctx.createRadialGradient(0, 0, R * 0.9, 0, 0, R * 1.25);
+    ag.addColorStop(0, 'rgba(100, 180, 255, 0.5)');
+    ag.addColorStop(1, 'rgba(100, 180, 255, 0)');
+    ctx.fillStyle = ag;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 1.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Сфера
+    ctx.save();
+    ctx.shadowBlur = 30;
+    ctx.shadowColor = pal.glow;
+    const g = ctx.createRadialGradient(-30, -30, 10, 0, 0, R);
+    g.addColorStop(0, '#aaddff');
+    g.addColorStop(0.5, pal.main);
+    g.addColorStop(1, '#001a44');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Континенты (клиппинг)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(80, 180, 90, 0.75)';
+    const off = (data.cloudOffset += 1/60 * 8) % 360;
+    for (let i = 0; i < 5; i++) {
+      const x = ((i * 70 - off) % 280) - 140;
+      ctx.beginPath();
+      ctx.ellipse(x, -20 + i * 8, 28 + (i % 3) * 8, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.32)';
+    for (let i = 0; i < 4; i++) {
+      const x = ((i * 100 - off * 1.6) % 320) - 160;
+      ctx.beginPath();
+      ctx.ellipse(x, 20 - i * 6, 36, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Кольцо
+    ctx.save();
+    ctx.rotate(0.3);
+    ctx.scale(1, 0.25);
+    ctx.strokeStyle = 'rgba(255, 220, 180, 0.6)';
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#ffddaa';
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 1.55, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Луна
+    data.moonAngle += 1/60 * 0.8;
+    const mx = Math.cos(data.moonAngle) * (R * 2);
+    const my = Math.sin(data.moonAngle) * (R * 0.6);
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = '#ffffff';
+    const mg = ctx.createRadialGradient(mx - 4, my - 4, 1, mx, my, 16);
+    mg.addColorStop(0, '#ffffff');
+    mg.addColorStop(1, '#665566');
+    ctx.fillStyle = mg;
+    ctx.beginPath();
+    ctx.arc(mx, my, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ---------- Стадия 6: Звезда ----------
+  function drawStar(t, data) {
+    const pal = STAGES[6].palette;
+    const pulse = 1 + 0.05 * Math.sin(t * 1.4);
+    const R = 90 * pulse;
+
+    // Корона
+    ctx.save();
+    ctx.shadowBlur = 60;
+    ctx.shadowColor = pal.glow;
+    const cg = ctx.createRadialGradient(0, 0, R * 0.7, 0, 0, R * 2.4);
+    cg.addColorStop(0, 'rgba(255, 200, 80, 0.7)');
+    cg.addColorStop(0.5, 'rgba(255, 120, 30, 0.25)');
+    cg.addColorStop(1, 'rgba(80, 0, 0, 0)');
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Протуберанцы
+    for (const p of data.prominences) {
+      p.angle += 1/60 * 0.15;
+      const flick = 0.7 + 0.3 * Math.sin(t * 5 + p.phase);
+      const len = p.length * flick;
+      const a = p.angle;
+      ctx.save();
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = pal.extra;
+      ctx.strokeStyle = pal.extra;
+      ctx.lineWidth = 4;
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * R, Math.sin(a) * R);
+      // Дуга
+      const mid = R + len * 0.5;
+      const mx = Math.cos(a + 0.25) * mid;
+      const my = Math.sin(a + 0.25) * mid;
+      const ex = Math.cos(a + 0.5) * R;
+      const ey = Math.sin(a + 0.5) * R;
+      ctx.quadraticCurveTo(mx, my, ex, ey);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Ядро
+    ctx.save();
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = pal.accent;
+    const sg = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+    sg.addColorStop(0, '#ffffff');
+    sg.addColorStop(0.4, pal.accent);
+    sg.addColorStop(1, pal.main);
+    ctx.fillStyle = sg;
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ---------- Стадия 7: Галактика ----------
+  function drawGalaxy(t, data) {
+    const pal = STAGES[7].palette;
+    const rot = t * 0.18;
+
+    // Тёмный ореол
+    ctx.save();
+    const dg = ctx.createRadialGradient(0, 0, 30, 0, 0, 260);
+    dg.addColorStop(0, 'rgba(140, 100, 200, 0.18)');
+    dg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = dg;
+    ctx.beginPath();
+    ctx.arc(0, 0, 260, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Звёзды спирали
+    ctx.save();
+    ctx.shadowBlur = 8;
+    for (const s of data.galaxyParticles) {
+      const a = s.a + rot;
+      const x = Math.cos(a) * s.r;
+      const y = Math.sin(a) * s.r * 0.55;
+      const col = s.r < 80 ? pal.accent : (s.r < 160 ? pal.main : pal.extra);
+      ctx.shadowColor = col;
+      ctx.fillStyle = col;
+      ctx.globalAlpha = s.brightness;
+      ctx.beginPath();
+      ctx.arc(x, y, s.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Ядро
+    ctx.save();
+    ctx.shadowBlur = 50;
+    ctx.shadowColor = pal.accent;
+    const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, 50);
+    cg.addColorStop(0, '#ffffff');
+    cg.addColorStop(0.4, pal.accent);
+    cg.addColorStop(1, 'rgba(120, 80, 200, 0)');
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 50, 28, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ---------- Стадия 8: Вселенная (сетка галактик) ----------
+  function drawUniverse(t, data) {
+    const pal = STAGES[8].palette;
+
+    // Космическая паутина — линии и узлы
+    ctx.save();
+    ctx.strokeStyle = pal.extra;
+    ctx.globalAlpha = 0.15;
+    ctx.lineWidth = 1;
+    const pts = data.webPoints;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x;
+        const dy = pts[i].y - pts[j].y;
+        const d = Math.hypot(dx, dy);
+        if (d < 110) {
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    for (const p of pts) {
+      const sz = 0.6 + 0.4 * Math.sin(t * 2 + p.phase);
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = pal.accent;
+      ctx.fillStyle = pal.accent;
+      ctx.globalAlpha = 0.5 * sz;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 1.5 + sz, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Мини-галактики в узлах
+    for (const c of data.cells) {
+      c.rot += 1/60 * c.speed;
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.rotate(c.rot);
+      // Спираль из 25 точек
+      for (let i = 0; i < 24; i++) {
+        const tt = i / 24;
+        const a = tt * 5;
+        const r = tt * 30;
+        const x = Math.cos(a) * r;
+        const y = Math.sin(a) * r * 0.55;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = pal.main;
+        ctx.fillStyle = pal.main;
+        ctx.globalAlpha = 0.4 + tt * 0.5;
+        ctx.beginPath();
+        ctx.arc(x, y, 0.8 + (1 - tt) * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Ядро
+      ctx.shadowBlur = 14;
+      ctx.shadowColor = pal.accent;
+      ctx.fillStyle = pal.accent;
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // ---------- Стадия 9: Мультивселенная ----------
+  function drawMultiverse(t, data) {
+    const pal = STAGES[9].palette;
+    for (const b of data.bubbles) {
+      b.phase += 1/60 * 0.5;
+      b.driftA += 1/60 * 0.3;
+      const bx = b.x + Math.cos(b.driftA) * 14;
+      const by = b.y + Math.sin(b.driftA * 0.7) * 10;
+      const r = b.r * (1 + 0.06 * Math.sin(t * 1.4 + b.phase));
+      const hue = (b.hue + t * 30) % 360;
+
+      ctx.save();
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = `hsl(${hue}, 100%, 70%)`;
+
+      // Пузырь
+      const g = ctx.createRadialGradient(bx - r * 0.3, by - r * 0.3, r * 0.1, bx, by, r);
+      g.addColorStop(0, `hsla(${hue}, 100%, 85%, 0.35)`);
+      g.addColorStop(0.7, `hsla(${(hue + 60) % 360}, 100%, 50%, 0.18)`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(bx, by, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Внутри — маленькая вселенная (точки)
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(bx, by, r * 0.85, 0, Math.PI * 2);
+      ctx.clip();
+      for (let i = 0; i < 20; i++) {
+        const a = (i / 20) * Math.PI * 2 + b.phase;
+        const rr = ((i * 7) % r) * 0.85;
+        const x = bx + Math.cos(a + i) * rr;
+        const y = by + Math.sin(a * 1.3 + i) * rr;
+        ctx.fillStyle = `hsl(${(hue + i * 18) % 360}, 100%, 80%)`;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Контур
+      ctx.strokeStyle = `hsla(${hue}, 100%, 80%, 0.65)`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(bx, by, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // ---------- Эффекты клика ----------
+  function drawClickRipples(dt) {
+    for (let i = clickRipples.length - 1; i >= 0; i--) {
+      const r = clickRipples[i];
+      r.life -= dt * 1.8;
+      r.r += dt * 220;
+      if (r.life <= 0) { clickRipples.splice(i, 1); continue; }
+      ctx.save();
+      ctx.globalAlpha = r.life * 0.8;
+      ctx.strokeStyle = r.color;
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = r.color;
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawClickFx() {
+    for (const f of State.clickFx) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, f.life);
+      ctx.fillStyle = f.color;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = f.color;
+      ctx.font = 'bold 16px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.restore();
+    }
+  }
+
+  return { init, frame, onStageEnter, onClick };
+})();
+
+// ===== js/yandex.js =====
+// Интеграция Яндекс Игры SDK с фолбэком для локальной разработки.
+const Yandex = (() => {
+  let ysdk = null;
+  let ready = false;
+  let lastFullscreenTime = 0;
+  const FULLSCREEN_INTERVAL_MS = 3 * 60 * 1000;
+  let rewardedInFlight = false;
+
+  function init() {
+    if (typeof window.YaGames === 'undefined') {
+      console.log('[Yandex] SDK не доступен — локальный режим');
+      lastFullscreenTime = performance.now();
+      ready = true;
+      return;
+    }
+    window.YaGames.init()
+      .then(sdk => {
+        ysdk = sdk;
+        ready = true;
+        lastFullscreenTime = performance.now();
+        console.log('[Yandex] SDK готов');
+        if (ysdk.features && ysdk.features.LoadingAPI && ysdk.features.LoadingAPI.ready) {
+          try { ysdk.features.LoadingAPI.ready(); } catch (e) {}
+        }
+      })
+      .catch(err => {
+        console.warn('[Yandex] init failed:', err);
+        ready = true;
+        lastFullscreenTime = performance.now();
+      });
+  }
+
+  function tick() {
+    if (!ready) return;
+    if (State.transitioning) return;
+    const now = performance.now();
+    if (now - lastFullscreenTime >= FULLSCREEN_INTERVAL_MS) {
+      showFullscreenAd();
+    }
+  }
+
+  function showFullscreenAd() {
+    lastFullscreenTime = performance.now();
+    if (!ysdk || !ysdk.adv || !ysdk.adv.showFullscreenAdv) {
+      console.log('[Yandex] fullscreen ad (заглушка)');
+      return;
+    }
+    try {
+      ysdk.adv.showFullscreenAdv({
+        callbacks: {
+          onOpen: () => { Audio.setMuted(true); },
+          onClose: () => { Audio.setMuted(false); },
+          onError: (e) => { Audio.setMuted(false); console.warn('[Yandex] adv error:', e); },
+        },
+      });
+    } catch (e) {
+      console.warn('[Yandex] fullscreen exception:', e);
+    }
+  }
+
+  function showRewarded(onReward, onClose) {
+    if (rewardedInFlight) return;
+    rewardedInFlight = true;
+    if (!ysdk || !ysdk.adv || !ysdk.adv.showRewardedVideo) {
+      // Локальный режим: моментально награждаем
+      console.log('[Yandex] rewarded (заглушка) — выдаём бонус сразу');
+      setTimeout(() => {
+        rewardedInFlight = false;
+        onReward && onReward();
+        onClose && onClose();
+      }, 200);
+      return;
+    }
+    let rewarded = false;
+    try {
+      ysdk.adv.showRewardedVideo({
+        callbacks: {
+          onOpen: () => { Audio.setMuted(true); },
+          onRewarded: () => { rewarded = true; onReward && onReward(); },
+          onClose: () => {
+            Audio.setMuted(false);
+            rewardedInFlight = false;
+            onClose && onClose();
+            if (!rewarded) console.log('[Yandex] rewarded закрыт без награды');
+          },
+          onError: (e) => {
+            Audio.setMuted(false);
+            rewardedInFlight = false;
+            console.warn('[Yandex] rewarded error:', e);
+            onClose && onClose();
+          },
+        },
+      });
+    } catch (e) {
+      rewardedInFlight = false;
+      console.warn('[Yandex] rewarded exception:', e);
+    }
+  }
+
+  function nextAdInMs() {
+    return Math.max(0, FULLSCREEN_INTERVAL_MS - (performance.now() - lastFullscreenTime));
+  }
+
+  return { init, tick, showFullscreenAd, showRewarded, nextAdInMs };
+})();
+
+// ===== js/ui.js =====
+// Привязка DOM к состоянию: апгрейды, прогресс, бустер, кнопка эволюции и рекламы.
+const UI = (() => {
+  let elEnergy, elRate, elStageName, elStageDesc, elMultiplier, elBooster;
+  let elProgress, elAdvancePanel, elAdvanceTarget, elAdvanceBtn, elAdvanceCostInfo;
+  let elRewardedBtn, elAdStatus, elHint, elTransitionText;
+  let upgradeEls = {};
+  let hintHiddenAt = 0;
+
+  function init() {
+    elEnergy = document.getElementById('energy');
+    elRate = document.getElementById('rate');
+    elStageName = document.getElementById('stage-name');
+    elStageDesc = document.getElementById('stage-desc');
+    elMultiplier = document.getElementById('multiplier');
+    elBooster = document.getElementById('booster');
+    elProgress = document.getElementById('stage-progress-fill');
+    elAdvancePanel = document.getElementById('advance-panel');
+    elAdvanceTarget = document.getElementById('advance-target');
+    elAdvanceBtn = document.getElementById('advance-btn');
+    elAdvanceCostInfo = document.getElementById('advance-cost-info');
+    elRewardedBtn = document.getElementById('rewarded-btn');
+    elAdStatus = document.getElementById('ad-status');
+    elHint = document.getElementById('hint');
+    elTransitionText = document.getElementById('transition-text');
+
+    document.querySelectorAll('.upgrade').forEach(node => {
+      const type = node.dataset.type;
+      upgradeEls[type] = {
+        root: node,
+        level: node.querySelector('.u-level'),
+        effect: node.querySelector('.u-effect'),
+        buy: node.querySelector('.u-buy'),
+      };
+      upgradeEls[type].buy.addEventListener('click', (e) => {
+        e.stopPropagation();
+        buyUpgrade(type);
+      });
+    });
+
+    elAdvanceBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (startAdvance()) {
+        showTransitionText();
+      }
+    });
+
+    elRewardedBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      elRewardedBtn.disabled = true;
+      elAdStatus.textContent = 'Загрузка рекламы…';
+      Yandex.showRewarded(
+        () => {
+          // Активировать бустер на 5 минут
+          const now = performance.now();
+          const remaining = Math.max(0, State.boosterEndTime - now);
+          State.boosterEndTime = now + remaining + 5 * 60 * 1000;
+          elAdStatus.textContent = '×2 активирован!';
+          setTimeout(() => { elAdStatus.textContent = ''; }, 2500);
+        },
+        () => {
+          elRewardedBtn.disabled = false;
+          if (!isBoosterActive()) elAdStatus.textContent = '';
+        }
+      );
+    });
+  }
+
+  function showTransitionText() {
+    const nextStage = STAGES[State.stage + 1];
+    const pal = nextStage.palette;
+    elTransitionText.innerHTML = nextStage.name + '<span class="sub">эволюция</span>';
+    elTransitionText.style.color = pal.main;
+    elTransitionText.classList.remove('hidden');
+    setTimeout(() => elTransitionText.classList.add('hidden'), 2800);
+  }
+
+  function update() {
+    elEnergy.textContent = fmtNum(State.energy) + ' E';
+    elRate.textContent = '+' + fmtNum(autoRate()) + ' / сек';
+    const cur = STAGES[State.stage];
+    elStageName.textContent = cur.name;
+    elStageName.style.color = cur.palette.main;
+    elStageDesc.textContent = cur.desc;
+
+    elMultiplier.textContent = '×' + totalMultiplier().toFixed(2);
+
+    if (isBoosterActive()) {
+      elBooster.classList.remove('hidden');
+      elBooster.textContent = '×2 бустер: ' + fmtTime(boosterRemainingMs());
+    } else {
+      elBooster.classList.add('hidden');
+    }
+
+    // Прогресс
+    const advCost = advanceCost();
+    if (isFinite(advCost)) {
+      const ratio = Math.max(0, Math.min(1, State.energy / advCost));
+      elProgress.style.width = (ratio * 100).toFixed(1) + '%';
+      elProgress.parentElement.classList.remove('hidden');
+    } else {
+      elProgress.style.width = '100%';
+    }
+
+    // Эволюция
+    if (canAdvance() && !State.transitioning) {
+      elAdvancePanel.classList.remove('hidden');
+      const next = STAGES[State.stage + 1];
+      elAdvanceTarget.textContent = '→ ' + next.name;
+      elAdvanceCostInfo.classList.add('hidden');
+    } else {
+      elAdvancePanel.classList.add('hidden');
+      elAdvanceCostInfo.classList.remove('hidden');
+      if (State.stage < STAGES.length - 1 && !State.transitioning) {
+        const remaining = Math.max(0, advCost - State.energy);
+        elAdvanceCostInfo.textContent = 'До следующей формы: ' + fmtNum(remaining) + ' E';
+      } else if (State.stage >= STAGES.length - 1) {
+        elAdvanceCostInfo.textContent = 'Финальная форма достигнута';
+      } else {
+        elAdvanceCostInfo.textContent = 'Переход…';
+      }
+    }
+
+    // Апгрейды
+    for (const type of ['click', 'auto', 'mult']) {
+      const def = UPGRADE_DEFS[type];
+      const lvl = State.upgrades[type];
+      const cost = upgradeCost(type);
+      const els = upgradeEls[type];
+      els.level.textContent = 'Ур. ' + lvl;
+      els.effect.textContent = def.effect(lvl);
+      els.buy.textContent = 'Купить · ' + fmtNum(cost) + ' E';
+      const affordable = State.energy >= cost;
+      els.buy.disabled = !affordable || State.transitioning;
+      els.buy.classList.toggle('affordable', affordable);
+    }
+
+    // Скрыть подсказку после первого клика
+    if (State.totalEnergy >= 1 && !hintHiddenAt) {
+      hintHiddenAt = performance.now();
+      elHint.classList.add('hidden');
+    }
+  }
+
+  return { init, update, showTransitionText };
+})();
+
+// ===== js/main.js =====
+// Точка входа: инициализация модулей, главный цикл, обработчики клика.
+(function () {
+  let lastTickT = performance.now();
+  let audioStarted = false;
+
+  function startAudioIfNeeded() {
+    if (audioStarted) return;
+    audioStarted = true;
+    Audio.start();
+  }
+
+  function onPointer(ev) {
+    // Игнорируем клики по элементам HUD — они обрабатывают сами
+    if (ev.target && ev.target !== document.getElementById('game')) return;
+
+    startAudioIfNeeded();
+
+    let x, y;
+    if (ev.touches && ev.touches.length) {
+      x = ev.touches[0].clientX;
+      y = ev.touches[0].clientY;
+    } else if (ev.changedTouches && ev.changedTouches.length) {
+      x = ev.changedTouches[0].clientX;
+      y = ev.changedTouches[0].clientY;
+    } else {
+      x = ev.clientX;
+      y = ev.clientY;
+    }
+
+    if (typeof x === 'number') {
+      doClick(x, y);
+    }
+  }
+
+  function loop(now) {
+    const dt = Math.min(0.1, (now - lastTickT) / 1000);
+    lastTickT = now;
+
+    tick(dt);
+    Render.frame(now);
+    UI.update();
+    Yandex.tick();
+
+    requestAnimationFrame(loop);
+  }
+
+  function start() {
+    Audio.init();
+    Render.init();
+    UI.init();
+    Yandex.init();
+
+    // Обработка кликов/тапов на canvas. Используем pointerdown — пускает и мышь, и тач.
+    const canvas = document.getElementById('game');
+    canvas.addEventListener('pointerdown', onPointer, { passive: true });
+
+    // Первое взаимодействие должно стартануть AudioContext (политика браузера)
+    window.addEventListener('pointerdown', startAudioIfNeeded, { once: true });
+    window.addEventListener('keydown', startAudioIfNeeded, { once: true });
+
+    // Предотвратить контекстное меню по правому клику
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Старт цикла
+    requestAnimationFrame(loop);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+
+</script>
+</body>
+</html>
