@@ -32,14 +32,23 @@
     }
   }
 
+  let firstFrameDone = false;
   function loop(now) {
     const dt = Math.min(0.1, (now - lastTickT) / 1000);
     lastTickT = now;
 
-    tick(dt);
+    // Пока показывается реклама — не накапливаем энергию и не двигаем сцену
+    if (!Yandex.isAdShowing()) {
+      tick(dt);
+    }
     Render.frame(now);
     UI.update();
     Yandex.tick();
+
+    if (!firstFrameDone) {
+      firstFrameDone = true;
+      Yandex.markGameReady();
+    }
 
     requestAnimationFrame(loop);
   }

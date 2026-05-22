@@ -2,6 +2,8 @@
 const Yandex = (() => {
   let ysdk = null;
   let ready = false;
+  let gameReadyReported = false;
+  let adInProgress = false;
   let lastFullscreenTime = 0;
   const FULLSCREEN_INTERVAL_MS = 3 * 60 * 1000;
   let rewardedInFlight = false;
@@ -19,9 +21,6 @@ const Yandex = (() => {
         ready = true;
         lastFullscreenTime = performance.now();
         console.log('[Yandex] SDK готов');
-        if (ysdk.features && ysdk.features.LoadingAPI && ysdk.features.LoadingAPI.ready) {
-          try { ysdk.features.LoadingAPI.ready(); } catch (e) {}
-        }
       })
       .catch(err => {
         console.warn('[Yandex] init failed:', err);
@@ -30,9 +29,20 @@ const Yandex = (() => {
       });
   }
 
+  // Вызывается из main.js после первого кадра — сигнал «игра готова к игре»
+  function markGameReady() {
+    if (gameReadyReported) return;
+    gameReadyReported = true;
+    if (ysdk && ysdk.features && ysdk.features.LoadingAPI && ysdk.features.LoadingAPI.ready) {
+      try { ysdk.features.LoadingAPI.ready(); } catch (e) { console.warn('[Yandex] LoadingAPI.ready:', e); }
+    }
+  }
+
+  function isAdShowing() { return adInProgress; }
+
   function tick() {
     if (!ready) return;
-    if (State.transitioning) return;
+    if (State.transitioning || adInProgress) return;
     const now = performance.now();
     if (now - lastFullscreenTime >= FULLSCREEN_INTERVAL_MS) {
       showFullscreenAd();
@@ -48,12 +58,15 @@ const Yandex = (() => {
     try {
       ysdk.adv.showFullscreenAdv({
         callbacks: {
-          onOpen: () => { Audio.setMuted(true); },
-          onClose: () => { Audio.setMuted(false); },
-          onError: (e) => { Audio.setMuted(false); console.warn('[Yandex] adv error:', e); },
+          onOpen: () => { adInProgress = true; Audio.setMuted(true); },
+          onClose: (wasShown) => { adInProgress = false; Audio.setMuted(false); },
+          onError: (e) => { adInProgress = false; Audio.setMuted(false); console.warn('[Yandex] adv error:', e); },
+          onOffline: () => { adInProgress = false; Audio.setMuted(false); },
         },
       });
     } catch (e) {
+      adInProgress = false;
+      Audio.setMuted(false);
       console.warn('[Yandex] fullscreen exception:', e);
     }
   }
@@ -62,7 +75,6 @@ const Yandex = (() => {
     if (rewardedInFlight) return;
     rewardedInFlight = true;
     if (!ysdk || !ysdk.adv || !ysdk.adv.showRewardedVideo) {
-      // Локальный режим: моментально награждаем
       console.log('[Yandex] rewarded (заглушка) — выдаём бонус сразу');
       setTimeout(() => {
         rewardedInFlight = false;
@@ -75,15 +87,17 @@ const Yandex = (() => {
     try {
       ysdk.adv.showRewardedVideo({
         callbacks: {
-          onOpen: () => { Audio.setMuted(true); },
+          onOpen: () => { adInProgress = true; Audio.setMuted(true); },
           onRewarded: () => { rewarded = true; onReward && onReward(); },
           onClose: () => {
+            adInProgress = false;
             Audio.setMuted(false);
             rewardedInFlight = false;
             onClose && onClose();
             if (!rewarded) console.log('[Yandex] rewarded закрыт без награды');
           },
           onError: (e) => {
+            adInProgress = false;
             Audio.setMuted(false);
             rewardedInFlight = false;
             console.warn('[Yandex] rewarded error:', e);
@@ -92,6 +106,8 @@ const Yandex = (() => {
         },
       });
     } catch (e) {
+      adInProgress = false;
+      Audio.setMuted(false);
       rewardedInFlight = false;
       console.warn('[Yandex] rewarded exception:', e);
     }
@@ -101,5 +117,5 @@ const Yandex = (() => {
     return Math.max(0, FULLSCREEN_INTERVAL_MS - (performance.now() - lastFullscreenTime));
   }
 
-  return { init, tick, showFullscreenAd, showRewarded, nextAdInMs };
+  return { init, markGameReady, tick, showFullscreenAd, showRewarded, nextAdInMs, isAdShowing };
 })();
